@@ -1,5 +1,6 @@
 [![CircleCI](https://circleci.com/gh/rainforestapp/rainforest-cli.svg?style=shield)](https://circleci.com/gh/rainforestapp/rainforest-cli)
 
+# FOO
 # Rainforest-cli
 
 A command line interface to interact with [Rainforest QA](https://www.rainforestqa.com/).
