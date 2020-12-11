@@ -35,6 +35,17 @@ func newLocalRunner() *localRunner {
 	return &localRunner{client: api}
 }
 
+func (r *localRunner) startTunnel(c cliContext) error {
+	tunnel, _ := GetTunnel(8000, "localhost")
+	customURL := tunnel.URL()
+
+	environment, err := r.client.CreateTemporaryEnvironment(customURL)
+	if err != nil {
+		return err
+	}
+
+}
+
 func (r *localRunner) startRun(c cliContext) error {
 	var err error
 

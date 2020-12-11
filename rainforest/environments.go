@@ -8,8 +8,9 @@ type EnvironmentParams struct {
 
 // Environment represents an environment in Rainforest
 type Environment struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID      int    `json:"id"`
+	Name    string `json:"name"`
+	Default bool   `json:"default"`
 }
 
 // CreateTemporaryEnvironment creates a new temporary environment and returns the
@@ -31,4 +32,12 @@ func (c *Client) CreateTemporaryEnvironment(urlString string) (*Environment, err
 	}
 
 	return &env, nil
+}
+
+func (c *Client) IsEnvironmentDefault(id int) (bool, error) {
+
+}
+
+func (c *Client) SetEnvironmentDefault(id int, makeDefault bool) (bool, error) {
+
 }
