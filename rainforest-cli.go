@@ -547,6 +547,12 @@ func main() {
 			ArgsUsage:    "[CHANNEL]",
 			Action:       updateCmd,
 		},
+		{
+			Name:         "local",
+			Usage:        "Does stuff locally",
+			OnUsageError: onCommandUsageErrorHandler("local"),
+			Action:       startLocalRun,
+		},
 	}
 
 	app.Run(shuffleFlags(os.Args))

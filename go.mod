@@ -7,6 +7,7 @@ require (
 	github.com/equinox-io/equinox v0.0.0-20151227023206-6f97d0d39708
 	github.com/garyburd/redigo v1.6.2 // indirect
 	github.com/gyuho/goraph v0.0.0-20160328020532-d460590d53a9
+	github.com/localtunnel/go-localtunnel v0.0.0-20170326223115-8a804488f275
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/olekukonko/tablewriter v0.0.0-20160621093029-daf2955e742c
