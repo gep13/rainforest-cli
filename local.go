@@ -39,11 +39,11 @@ func (r *localRunner) startTunnel(c cliContext) error {
 	tunnel, _ := GetTunnel(8000, "localhost")
 	customURL := tunnel.URL()
 
-	environment, err := r.client.CreateTemporaryEnvironment(customURL)
+	_, err := r.client.CreateTemporaryEnvironment(customURL)
 	if err != nil {
 		return err
 	}
-
+	return nil
 }
 
 func (r *localRunner) startRun(c cliContext) error {
