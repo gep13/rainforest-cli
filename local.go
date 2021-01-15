@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 
 	"github.com/rainforestapp/rainforest-cli/rainforest"
 	"github.com/urfave/cli"
@@ -35,15 +37,29 @@ func newLocalRunner() *localRunner {
 	return &localRunner{client: api}
 }
 
-func (r *localRunner) startTunnel(c cliContext) error {
-	tunnel, _ := GetTunnel(8000, "localhost")
-	customURL := tunnel.URL()
+func (r *localRunner) startTunnel(c cliContext) (string, error) {
 
-	_, err := r.client.CreateTemporaryEnvironment(customURL)
-	if err != nil {
-		return err
+	rflocalHost := os.Getenv("RFLOCAL_HOST")
+	if rflocalHost == "" {
+		log.Print("RFLOCAL_HOST not set, falling back to localhost")
+		rflocalHost = "localhost"
 	}
-	return nil
+
+	rflocalPortS := os.Getenv("RFLOCAL_PORT")
+	if rflocalPortS == "" {
+		log.Print("RFLOCAL_HOST not set, falling back to 3000")
+		rflocalPortS = "3000"
+	}
+	rflocalPort, err := strconv.Atoi(rflocalPortS)
+	if err != nil {
+		log.Printf("Cannot use RFLOCAL_HOST value of %v", rflocalPortS)
+		return "", err
+	}
+
+	tunnel, _ := GetTunnel(rflocalPort, rflocalHost)
+	tunnelURL := tunnel.URL()
+	log.Printf("Exposing %v:%v at %v", rflocalHost, rflocalPort, tunnelURL)
+	return tunnelURL, nil
 }
 
 func (r *localRunner) startRun(c cliContext) error {
@@ -70,10 +86,9 @@ func (r *localRunner) makeRunParams(c cliContext) (rainforest.RunParams, error) 
 	expandedBrowsers := expandStringSlice(browsers)
 
 	// open localtunnel
-	tunnel, _ := GetTunnel(8000, "localhost")
-	customURL := tunnel.URL()
+	tunnelURL, err := r.startTunnel(c)
 
-	environment, err := r.client.CreateTemporaryEnvironment(customURL)
+	environment, err := r.client.CreateTemporaryEnvironment(tunnelURL)
 	if err != nil {
 		return rainforest.RunParams{}, err
 	}
