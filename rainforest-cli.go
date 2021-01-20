@@ -551,7 +551,13 @@ func main() {
 			Name:         "local",
 			Usage:        "Does stuff locally",
 			OnUsageError: onCommandUsageErrorHandler("local"),
-			Action:       startLocalRun,
+			Subcommands: []cli.Command{
+				{
+					Name:  "run",
+					Usage: "run a test against local server",
+					Action: startLocalRun,
+				},
+			},
 		},
 	}
 
