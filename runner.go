@@ -19,6 +19,7 @@ import (
 type runnerAPI interface {
 	CreateRun(params rainforest.RunParams) (*rainforest.RunStatus, error)
 	CreateTemporaryEnvironment(string) (*rainforest.Environment, error)
+	DeleteEnvironment(int) error
 	CheckRunStatus(int) (*rainforest.RunStatus, error)
 	rfmlAPI
 }

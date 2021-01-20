@@ -13,12 +13,10 @@ import (
 )
 
 func GetTunnel(port int, host string) (*localtunnel.LocalTunnel, error) {
-
 	tunnel, err := localtunnel.New(port, host, localtunnel.Options{})
 
 	if err != nil {
 		fmt.Println("Error: %v", err)
-		return tunnel, err
 	}
 
 	return tunnel, err
@@ -38,7 +36,6 @@ func newLocalRunner() *localRunner {
 }
 
 func (r *localRunner) startTunnel(c cliContext) (string, error) {
-
 	rflocalHost := os.Getenv("RFLOCAL_HOST")
 	if rflocalHost == "" {
 		log.Print("RFLOCAL_HOST not set, falling back to localhost")
@@ -69,6 +66,7 @@ func (r *localRunner) startRun(c cliContext) error {
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
+	defer r.client.DeleteEnvironment(params.EnvironmentID)
 
 	runStatus, err := r.client.CreateRun(params)
 	if err != nil {

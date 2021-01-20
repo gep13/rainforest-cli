@@ -82,3 +82,19 @@ func (c *Client) SetEnvironmentDefault(id int, makeDefault bool) error {
 
 	return nil
 }
+
+// DeleteEnvironment deletes an environment with a specified ID
+func (c *Client) DeleteEnvironment(environmentID int) error {
+	// Prepare request
+	req, err := c.NewRequest("DELETE", "environments/"+strconv.Itoa(environmentID), nil)
+	if err != nil {
+		return err
+	}
+
+	// Send request and process response
+	_, err = c.Do(req, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
