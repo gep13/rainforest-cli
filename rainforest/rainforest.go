@@ -18,7 +18,8 @@ const (
 	// Version of the lib in SemVer
 	libVersion = "2.0.0"
 
-	currentBaseURL  = "https://app.rainforestqa.com/api/1/"
+	BaseURL  = "https://app.rainforestqa.com"
+	apiURL  = "https://app.rainforestqa.com/api/1/"
 	authTokenHeader = "CLIENT_TOKEN"
 )
 
@@ -54,7 +55,7 @@ func NewClient(token string, debug bool) *Client {
 			log.Fatalf("Invalid URL set in $RAINFOREST_API_URL=%v", envURL)
 		}
 	} else {
-		baseURL, _ = url.Parse(currentBaseURL)
+		baseURL, _ = url.Parse(apiURL)
 	}
 
 	return &Client{

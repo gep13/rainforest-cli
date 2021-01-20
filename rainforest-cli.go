@@ -557,6 +557,11 @@ func main() {
 					Usage: "run a test against local server",
 					Action: startLocalRun,
 				},
+				{
+					Name:  "edit",
+					Usage: "edit a test with the local server appearing in the VM",
+					Action: startLocalTestEditing,
+				},
 			},
 		},
 	}

@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
+	"os/exec"
+	"runtime"
 	"strconv"
 
 	"github.com/rainforestapp/rainforest-cli/rainforest"
@@ -29,6 +32,11 @@ type localRunner struct {
 func startLocalRun(c cliContext) error {
 	r := newLocalRunner()
 	return r.startRun(c)
+}
+
+func startLocalTestEditing(c cliContext) error {
+	r := newLocalRunner()
+	return r.startTestEditing(c)
 }
 
 func newLocalRunner() *localRunner {
@@ -77,29 +85,59 @@ func (r *localRunner) startRun(c cliContext) error {
 	return monitorRunStatus(c, runStatus.ID)
 }
 
+func (r *localRunner) startTestEditing(c cliContext) error {
+	var err error
+
+	params, err := r.makeRunParams(c)
+	if err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+	defer r.client.DeleteEnvironment(params.EnvironmentID)
+
+	testId := params.Tests.([]int)[0]
+	url := fmt.Sprintf("%v/tests/%v?envId=%v", rainforest.BaseURL, testId, params.EnvironmentID)
+	log.Printf("Opening %v", url)
+	OpenUrl(url)
+	time.Sleep(20 * time.Second)
+
+	return nil
+}
+
+func OpenUrl(url string) error {
+	var cmd string
+	var args []string
+
+	switch runtime.GOOS {
+		case "windows":
+			cmd = "cmd"
+			args = []string{"/c", "start"}
+		case "darwin":
+			cmd = "open"
+		default:
+			cmd = "xdg-open"
+	}
+	args = append(args, url)
+	return exec.Command(cmd, args...).Start()
+}
+
 func (r *localRunner) makeRunParams(c cliContext) (rainforest.RunParams, error) {
-	crowd := "automation"
+	// we can ignore rfml tests here, so just passing in an empty slice
+	var localTests []*rainforest.RFTest
+	// delegate most of the work to runner.makeRunParams
+	params, err := newRunner().makeRunParams(c, localTests)
 
-	browsers := []string{"chrome_1440_900"}
-	expandedBrowsers := expandStringSlice(browsers)
-
-	// open localtunnel
+	// override the environment with the runnel
 	tunnelURL, err := r.startTunnel(c)
-
-	environment, err := r.client.CreateTemporaryEnvironment(tunnelURL)
 	if err != nil {
 		return rainforest.RunParams{}, err
 	}
-
-	var testIDs interface{}
-	testIDs = []int{
-		273861,
+	environment, err := r.client.CreateTemporaryEnvironment(tunnelURL)
+	if err != nil {
+		return rainforest.RunParams{},err
 	}
+	params.EnvironmentID = environment.ID
 
-	return rainforest.RunParams{
-		Tests:         testIDs,
-		Crowd:         crowd,
-		Browsers:      expandedBrowsers,
-		EnvironmentID: environment.ID,
-	}, nil
+	// also override the crowd, just in case
+	params.Crowd = "automation"
+	return params, nil
 }
