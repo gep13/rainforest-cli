@@ -45,30 +45,6 @@ func newLocalRunner() *localRunner {
 	return &localRunner{client: api}
 }
 
-func (r *localRunner) startTunnel(c cliContext) (string, error) {
-	rflocalHost := os.Getenv("RFLOCAL_HOST")
-	if rflocalHost == "" {
-		log.Print("RFLOCAL_HOST not set, falling back to localhost")
-		rflocalHost = "localhost"
-	}
-
-	rflocalPortS := os.Getenv("RFLOCAL_PORT")
-	if rflocalPortS == "" {
-		log.Print("RFLOCAL_HOST not set, falling back to 3000")
-		rflocalPortS = "3000"
-	}
-	rflocalPort, err := strconv.Atoi(rflocalPortS)
-	if err != nil {
-		log.Printf("Cannot use RFLOCAL_HOST value of %v", rflocalPortS)
-		return "", err
-	}
-
-	tunnel, _ := GetTunnel(rflocalPort, rflocalHost)
-	tunnelURL := tunnel.URL()
-	log.Printf("Exposing %v:%v at %v", rflocalHost, rflocalPort, tunnelURL)
-	return tunnelURL, nil
-}
-
 func (r *localRunner) startRun(c cliContext) error {
 	var err error
 
@@ -98,14 +74,13 @@ func (r *localRunner) startTestEditing(c cliContext) error {
 
 	testId := params.Tests.([]int)[0]
 	url := fmt.Sprintf("%v/tests/%v?envId=%v", rainforest.BaseURL, testId, params.EnvironmentID)
-	log.Printf("Opening %v", url)
-	OpenUrl(url)
+	openBrowserWithUrl(url)
 	time.Sleep(20 * time.Second)
 
 	return nil
 }
 
-func OpenUrl(url string) error {
+func openBrowserWithUrl(url string) error {
 	var cmd string
 	var args []string
 
@@ -124,22 +99,60 @@ func OpenUrl(url string) error {
 	return exec.Command(cmd, args...).Start()
 }
 
+func (r *localRunner) setupLocalEnvironment() (int, error) {
+	rflocalHost := os.Getenv("RFLOCAL_HOST")
+	if rflocalHost == "" {
+		log.Print("RFLOCAL_HOST not set, falling back to localhost")
+		rflocalHost = "localhost"
+	}
+
+	rflocalPortS := os.Getenv("RFLOCAL_PORT")
+	if rflocalPortS == "" {
+		log.Print("RFLOCAL_HOST not set, falling back to 3000")
+		rflocalPortS = "3000"
+	}
+	rflocalPort, err := strconv.Atoi(rflocalPortS)
+	if err != nil {
+		log.Printf("Cannot use RFLOCAL_HOST value of %v", rflocalPortS)
+		return -1, err
+	}
+
+	tunnelURL, err := r.openTunnel(rflocalHost, rflocalPort)
+	if err != nil {
+		return -1, err
+	}
+
+	environment, err := r.client.CreateTemporaryEnvironment(tunnelURL)
+	if err != nil {
+		return -1, err
+	}
+
+	return environment.ID, nil
+}
+
+func (r *localRunner) openTunnel(host string, port int) (string, error) {
+	tunnel, err := GetTunnel(port, host)
+	if err != nil {
+		return "", err
+	}
+	log.Printf("Exposing %v:%v at %v", host, port, tunnel.URL())
+	return tunnel.URL(), nil
+}
+
 func (r *localRunner) makeRunParams(c cliContext) (rainforest.RunParams, error) {
 	// we can ignore rfml tests here, so just passing in an empty slice
 	var localTests []*rainforest.RFTest
 	// delegate most of the work to runner.makeRunParams
 	params, err := newRunner().makeRunParams(c, localTests)
-
-	// override the environment with the runnel
-	tunnelURL, err := r.startTunnel(c)
 	if err != nil {
 		return rainforest.RunParams{}, err
 	}
-	environment, err := r.client.CreateTemporaryEnvironment(tunnelURL)
+	// override the environment with the tunnel
+	environmentID, err := r.setupLocalEnvironment()
 	if err != nil {
-		return rainforest.RunParams{},err
+		return rainforest.RunParams{}, err
 	}
-	params.EnvironmentID = environment.ID
+	params.EnvironmentID = environmentID
 
 	// also override the crowd, just in case
 	params.Crowd = "automation"
