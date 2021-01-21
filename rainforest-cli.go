@@ -556,6 +556,69 @@ func main() {
 					Name:  "run",
 					Usage: "run a test against local server",
 					Action: startLocalRun,
+					Flags: []cli.Flag{
+						cli.StringSliceFlag{
+							Name:  "tag",
+							Usage: "filter tests by `TAG`. Can be used multiple times for filtering by multiple tags.",
+						},
+						cli.StringSliceFlag{
+							Name:  "exclude",
+							Usage: "Don't execute test specified by `FILE`. Can be used multiple times for specifying multiple files.",
+						},
+						cli.StringSliceFlag{
+							Name:  "force-execute",
+							Usage: "Execute test specified by `FILE` even if execute: false is specified. Can be used multiple times for specifying multiple files.",
+						},
+						cli.StringFlag{
+							Name:  "site, site-id",
+							Usage: "filter tests by a specific site. You can see a list of your `SITE-ID`s with the sites command.",
+						},
+						cli.StringFlag{
+							Name:  "folder, folder-id, filter, filter-id",
+							Usage: "filter tests by a specific folder. You can see a list of your `FOLDER-ID`s with the folders command.",
+						},
+						cli.IntFlag{
+							Name:  "feature, feature-id",
+							Usage: "filter tests by a specific feature. You can see a list of your `FEATURE-ID`s with the features command.",
+						},
+						cli.IntFlag{
+							Name:  "run-group, run-group-id",
+							Usage: "start a run using a run group. You can see a list of your `RUN-GROUP-ID`s with the run-groups command. This option cannot be used in conjunction with other filtering options.",
+						},
+						cli.StringSliceFlag{
+							Name: "browser, browsers",
+							Usage: "specify the `BROWSER` you wish to run against. This overrides test level settings." +
+								"Can be used multiple times to run against multiple browsers.",
+						},
+						cli.StringFlag{
+							Name: "conflict",
+							Usage: "use the abort option to abort any runs in the same environment or " +
+								"use the abort-all option to abort all runs in progress.",
+						},
+						cli.BoolFlag{
+							Name: "bg, background",
+							Usage: "run in the background. This option makes cli return after successfully starting a run, " +
+								"without waiting for the run results.",
+						},
+						cli.BoolFlag{
+							Name: "fail-fast, ff",
+							Usage: "fail the build as soon as the first failed result comes in. " +
+								"If you don't pass this it will wait until 100% of the run is done. Use with --fg.",
+						},
+						cli.StringFlag{
+							Name:  "description",
+							Usage: "add arbitrary `DESCRIPTION` to the run.",
+						},
+						cli.StringFlag{
+							Name: "release",
+							Usage: "adds a `RELEASE` ID that is associated with this run. You can use any string, but commonly used " +
+								"IDs are commit SHAs, build IDs, branch names, etc.",
+						},
+						cli.StringFlag{
+							Name:  "junit-file",
+							Usage: "Create a JUnit XML report `FILE` with the specified name. Must be run in foreground mode.",
+						},
+					},
 				},
 				{
 					Name:  "edit",
