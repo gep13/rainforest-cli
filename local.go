@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 	"os/exec"
+	"os/signal"
+	"syscall"
 	"runtime"
 	"strconv"
 
@@ -41,6 +43,30 @@ func startLocalTestEditing(c cliContext) error {
 	return r.startTestEditing(c)
 }
 
+func startLocalTunnel(c cliContext) error {
+	r := newLocalRunner()
+	environmentID, err := r.setupLocalEnvironment()
+	if err != nil {
+		return err
+	}
+	defer r.client.DeleteEnvironment(environmentID)
+	setupInterruptHandler(r, environmentID)
+	log.Print("Tunnel open, press ctrl + c to close.")
+	select{ } // this hangs indefnitely
+
+	return nil
+}
+
+func setupInterruptHandler(r *localRunner, environmentID int) {
+	ch := make(chan os.Signal)
+	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-ch
+		r.client.DeleteEnvironment(environmentID)
+		os.Exit(0)
+	}()
+}
+
 func newLocalRunner() *localRunner {
 	return &localRunner{client: api}
 }
@@ -53,6 +79,7 @@ func (r *localRunner) startRun(c cliContext) error {
 		return cli.NewExitError(err.Error(), 1)
 	}
 	defer r.client.DeleteEnvironment(params.EnvironmentID)
+	setupInterruptHandler(r, params.EnvironmentID)
 
 	runStatus, err := r.client.CreateRun(params)
 	if err != nil {
@@ -71,11 +98,13 @@ func (r *localRunner) startTestEditing(c cliContext) error {
 		return cli.NewExitError(err.Error(), 1)
 	}
 	defer r.client.DeleteEnvironment(params.EnvironmentID)
+	setupInterruptHandler(r, params.EnvironmentID)
 
 	testId := params.Tests.([]int)[0]
 	url := fmt.Sprintf("%v/tests/%v?envId=%v", rainforest.BaseURL, testId, params.EnvironmentID)
 	openBrowserWithUrl(url)
-	time.Sleep(20 * time.Second)
+	log.Print("Tunnel open, press ctrl + c to close.")
+	select{ } // this hangs indefnitely
 
 	return nil
 }

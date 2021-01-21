@@ -625,6 +625,11 @@ func main() {
 					Usage: "edit a test with the local server appearing in the VM",
 					Action: startLocalTestEditing,
 				},
+				{
+					Name:  "tunnel",
+					Usage: "open a tunnel",
+					Action: startLocalTunnel,
+				},
 			},
 		},
 	}
