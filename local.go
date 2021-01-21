@@ -16,7 +16,9 @@ import (
 )
 
 func GetTunnel(port int, host string) (*localtunnel.LocalTunnel, error) {
-	tunnel, err := localtunnel.New(port, host, localtunnel.Options{})
+	tunnel, err := localtunnel.New(port, host, localtunnel.Options{
+		BaseURL: "http://rainforest.run",
+	})
 
 	if err != nil {
 		fmt.Println("Error: %v", err)
@@ -109,11 +111,13 @@ func OpenUrl(url string) error {
 
 	switch runtime.GOOS {
 		case "windows":
+			// TODO: test on windows
 			cmd = "cmd"
 			args = []string{"/c", "start"}
 		case "darwin":
 			cmd = "open"
 		default:
+			// TODO: test on Linux
 			cmd = "xdg-open"
 	}
 	args = append(args, url)
