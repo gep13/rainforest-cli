@@ -2,6 +2,7 @@ package gitTrigger
 
 import (
 	"bytes"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"reflect"
@@ -9,29 +10,23 @@ import (
 	"testing"
 )
 
-const fakeRepoName = "git_testing_directory"
-
-var testingDirectory string
-
-func deleteFakeRepo(t *testing.T) {
-	os.Chdir(testingDirectory)
-	err := os.RemoveAll(fakeRepoName)
+func deleteFakeRepo(t *testing.T, directory string) {
+	err := os.RemoveAll(directory)
 	if err != nil {
-		t.Fatalf("Couldn't delete testing directory: %v.", fakeRepoName)
+		t.Fatalf("Couldn't delete testing directory: %v.", err)
 	}
 }
 
-func makeFakeRepoWithCommit(t *testing.T, commitMsg string) {
+func makeFakeRepoWithCommit(t *testing.T, commitMsg string) string {
 	// create empty directory for repo
-	testingDirectory, _ = os.Getwd()
-	err := os.Mkdir(fakeRepoName, 0777)
+	dir, err := ioutil.TempDir("", "git_testing_directory")
 	if err != nil {
-		t.Fatal("Couldn't create directory for testing needs.")
+		t.Fatal("Couldn't create directory for testing needs:", err)
 	}
-	os.Chdir(fakeRepoName)
+	os.Chdir(dir)
 	if err != nil {
-		deleteFakeRepo(t)
-		t.Fatal("Couldn't navigate to the directory for testing needs.")
+		deleteFakeRepo(t, dir)
+		t.Fatal("Couldn't navigate to the directory for testing needs:", err)
 	}
 
 	// initialize repo
@@ -40,7 +35,7 @@ func makeFakeRepoWithCommit(t *testing.T, commitMsg string) {
 	cmd.Stdout = &out
 	err = cmd.Run()
 	if err != nil || !strings.Contains(out.String(), "Initialized") {
-		deleteFakeRepo(t)
+		deleteFakeRepo(t, dir)
 		t.Fatal("Couldn't initialize git repo for testing needs.")
 	}
 
@@ -50,7 +45,7 @@ func makeFakeRepoWithCommit(t *testing.T, commitMsg string) {
 	cmd.Stdout = &out
 	err = cmd.Run()
 	if err != nil {
-		deleteFakeRepo(t)
+		deleteFakeRepo(t, dir)
 		t.Fatal("Couldn't set the username in repo.")
 	}
 	cmd = exec.Command("git", "config", "user.email", "'test@rainforestqa.com'")
@@ -58,7 +53,7 @@ func makeFakeRepoWithCommit(t *testing.T, commitMsg string) {
 	cmd.Stdout = &out
 	err = cmd.Run()
 	if err != nil {
-		deleteFakeRepo(t)
+		deleteFakeRepo(t, dir)
 		t.Fatal("Couldn't set the email in repo.")
 	}
 	cmd = exec.Command("git", "config", "commit.gpgSign", "false")
@@ -66,7 +61,7 @@ func makeFakeRepoWithCommit(t *testing.T, commitMsg string) {
 	cmd.Stdout = &out
 	err = cmd.Run()
 	if err != nil {
-		deleteFakeRepo(t)
+		deleteFakeRepo(t, dir)
 		t.Fatal("Couldn't set the email in repo.")
 	}
 
@@ -76,9 +71,11 @@ func makeFakeRepoWithCommit(t *testing.T, commitMsg string) {
 	cmd.Stdout = &out
 	err = cmd.Run()
 	if err != nil || !strings.Contains(out.String(), commitMsg) {
-		deleteFakeRepo(t)
+		deleteFakeRepo(t, dir)
 		t.Fatal("Couldn't commit to the test repo.")
 	}
+
+	return dir
 }
 
 func addFakeGitRemote(t *testing.T, remote_name string, remote_url string) {
@@ -94,8 +91,8 @@ func addFakeGitRemote(t *testing.T, remote_name string, remote_url string) {
 
 func TestNewGitTrigger(t *testing.T) {
 	const commitMsg = "foo barred baz"
-	makeFakeRepoWithCommit(t, commitMsg)
-	defer deleteFakeRepo(t)
+	dir := makeFakeRepoWithCommit(t, commitMsg)
+	defer deleteFakeRepo(t, dir)
 	git, err := NewGitTrigger()
 	if err != nil {
 		t.Error("Unexpected error when doing newGitTrigger()")
@@ -108,8 +105,8 @@ func TestNewGitTrigger(t *testing.T) {
 func TestGetLatestCommit(t *testing.T) {
 	const commitMsg = "test commit in a test repo"
 	fakeGit := gitTrigger{Trigger: "@rainforest"}
-	makeFakeRepoWithCommit(t, commitMsg)
-	defer deleteFakeRepo(t)
+	dir := makeFakeRepoWithCommit(t, commitMsg)
+	defer deleteFakeRepo(t, dir)
 	err := fakeGit.getLatestCommit()
 	if err != nil {
 		t.Error("Unexpected error when doing getLatestCommit()")
@@ -122,9 +119,9 @@ func TestGetLatestCommit(t *testing.T) {
 func TestGetRemote(t *testing.T) {
 	const expectedRemote = "git@github.com:rainforestapp/rainforest-cli.git"
 	fakeGit := gitTrigger{Trigger: "@rainforest"}
-	makeFakeRepoWithCommit(t, "lol")
+	dir := makeFakeRepoWithCommit(t, "lol")
 	addFakeGitRemote(t, "lol", expectedRemote)
-	defer deleteFakeRepo(t)
+	defer deleteFakeRepo(t, dir)
 	remote, err := fakeGit.GetRemote()
 	if err != nil {
 		t.Errorf("Unexpected error when doing GetRemote(): %v", err)
@@ -138,10 +135,10 @@ func TestGetRemoteTwoRemotes(t *testing.T) {
 	const expectedRemote1 = "git@github.com:rainforestapp/rainforest-cli1.git"
 	const expectedRemote2 = "git@github.com:rainforestapp/rainforest-cli2.git"
 	fakeGit := gitTrigger{Trigger: "@rainforest"}
-	makeFakeRepoWithCommit(t, "lol")
+	dir := makeFakeRepoWithCommit(t, "lol")
 	addFakeGitRemote(t, "lol1", expectedRemote1)
 	addFakeGitRemote(t, "lol2", expectedRemote2)
-	defer deleteFakeRepo(t)
+	defer deleteFakeRepo(t, dir)
 	remote, err := fakeGit.GetRemote()
 	if err != nil {
 		t.Errorf("Unexpected error when doing GetRemote(): %v", err)
@@ -153,8 +150,8 @@ func TestGetRemoteTwoRemotes(t *testing.T) {
 
 func TestGetRemoteMissing(t *testing.T) {
 	fakeGit := gitTrigger{Trigger: "@rainforest"}
-	makeFakeRepoWithCommit(t, "lol")
-	defer deleteFakeRepo(t)
+	dir := makeFakeRepoWithCommit(t, "lol")
+	defer deleteFakeRepo(t, dir)
 	remote, err := fakeGit.GetRemote()
 	if err == nil {
 		t.Errorf("Expected GetRemote() to error, but it didn't")
